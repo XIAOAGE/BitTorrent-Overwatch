@@ -3,3 +3,4 @@ storm_topology/.idea
 storm_topology/target
 package-lock.json
 node_modules/
+.DS_Store
