@@ -1,0 +1,79 @@
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+    <script src="node_modules/datamaps/dist/datamaps.world.min.js"></script>
+  </head>
+  <style>
+    #container {
+      margin: 0 auto;
+    }
+  </style>
+  <body>
+    <div id="container" style="position: relative; width: 100%; height: 100%;"></div>
+  </body>
+  <script>
+    var name_to_code = {
+      "Russian Federation": "RUS",
+      "Korea, Republic of": "KOR",
+      "Syrian Arab Republic": "SYR",
+      "Hong Kong": "CHN",
+      "United States": "USA"
+    };
+    var country_heat = {};
+    var country_ppl = {};
+    var tot_ppl = 0;
+    var countries = Datamap.prototype.worldTopo.objects.world.geometries;
+    for (var i = 0, j = countries.length; i < j; i++) {
+      name_to_code[countries[i].properties.name] = countries[i].id;
+      country_ppl[countries[i].id] = 0;
+    } 
+
+    var map = new Datamap({
+      fills: {
+        defaultFill: 'rgba(100,100,100,0.9)' // Any hex, color name or rgb/rgba value
+      },
+      geographyConfig: {
+        highlightOnHover: true,
+      },
+      geographyConfig: {
+        popupTemplate: function(geography, data) { //this function should just return a string
+          return '<div class="hoverinfo"><strong>' + geography.properties.name + '</strong><br><strong>Users: '+country_ppl[name_to_code[geography.properties.name]]+'</div>';
+        }
+      },
+      element: document.getElementById('container')
+    });
+    
+    var ws = new WebSocket("ws://localhost:8765/");
+
+    ws.onmessage = function(event) {
+      if(event.data=="END") {
+        for (var prop in country_heat) {
+          country_heat[prop] /= tot_ppl;
+          var h = 255
+          var s = (1 - country_heat[prop]) * 230
+          var l = country_heat[prop] * 1
+          country_heat[prop] = "rgba("+h+","+s+","+l+",0.9)";
+        }
+        tot_ppl = 0;
+        map.updateChoropleth(country_heat);
+        
+      } else {
+        var data = "";
+        for(var i=0; i<event.data.length; i++) {
+          if(event.data[i]=="'") data += '"';
+          else data += event.data[i];
+        }
+        data = JSON.parse(data);
+        if(!name_to_code[data["_id"]]) {
+          console.warn("code not exist for country: "+data["_id"]);
+        } else {
+          country_heat[name_to_code[data["_id"]]] = data["count"];
+          country_ppl[name_to_code[data["_id"]]] = data["count"];
+          tot_ppl = tot_ppl > data["count"] ? tot_ppl : data["count"];
+        }
+      }
+    }
+
+  </script>
+</html>
