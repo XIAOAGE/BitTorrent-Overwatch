@@ -219,7 +219,7 @@ class DHTServer(Thread):
       pass
 
 if __name__ == "__main__":
-  dht = DHTServer("0.0.0.0", 6882, 300)
+  dht = DHTServer("0.0.0.0", 6882, 500)
   dht.start()
   dht.auto_send_find_node()
 

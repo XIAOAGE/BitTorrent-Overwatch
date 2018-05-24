@@ -8,6 +8,7 @@ pykafka = "*"
 pymongo = "*"
 websockets = "*"
 pycountry = "*"
+geoip = "*"
 
 [dev-packages]
 
